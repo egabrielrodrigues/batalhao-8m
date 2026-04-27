@@ -1,8 +1,24 @@
 import Navbar from "../components/Navbar";
 import Banner from "../components/Banner";
 import Card from "../components/Card";
+import { supabase } from "@/lib/supabase";
 
-export default function Home() {
+export default async function Home() {
+
+  // 🔥 PM DO MÊS (último)
+  const { data: pmMes } = await supabase
+    .from("pm_mes")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  // 🚨 OCORRÊNCIA (última)
+  const { data: ocorrencia } = await supabase
+    .from("ocorrencias")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(1);
+
   return (
     <main className="bg-gray-950 min-h-screen text-white">
       <Navbar />
@@ -30,60 +46,70 @@ export default function Home() {
             </div>
           </Card>
 
-          {/* PM do mês */}
+          {/* 🏆 PM DO MÊS DINÂMICO */}
           <Card titulo="PM do Mês">
-            <div className="flex gap-4 items-center">
-              <img
-                src="/pm.png"
-                className="w-20 h-20 rounded object-cover"
-              />
-              <div>
-                <h3 className="font-bold">SD PM Nome</h3>
-                <p className="text-sm text-gray-300">
-                  Destaque pelo excelente desempenho e dedicação.
-                </p>
-              </div>
-            </div>
+            {pmMes && pmMes.length > 0 ? (
+              pmMes.map((pm) => (
+                <div key={pm.id} className="flex gap-4 items-center">
+                  <img
+                    src={`/oficiais/${pm.re}.jpg`}
+                    className="w-20 h-20 rounded object-cover"
+                  />
+                  <div>
+                    <h3 className="font-bold">{pm.nome}</h3>
+                    <p className="text-sm text-gray-300">
+                      {pm.descricao}
+                    </p>
+
+                    {/* BOTÃO HISTÓRICO */}
+                    <a
+                      href="/pm-do-mes"
+                      className="text-blue-400 text-xs underline"
+                    >
+                      Ver todos →
+                    </a>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400">
+                Nenhum PM cadastrado.
+              </p>
+            )}
           </Card>
 
-          {/* Ocorrência */}
+          {/* 🚨 OCORRÊNCIA DINÂMICA */}
           <Card titulo="Ocorrência Destaque">
-             <img
-                src="/ocorrencia.jpg"
-                className="w-20 h-20 rounded object-cover"
-              />
-            <p className="text-sm text-gray-300">
-              Ação rápida resultou na prisão de indivíduos envolvidos
-              em roubo na região.
-            </p>
+            {ocorrencia && ocorrencia.length > 0 ? (
+              ocorrencia.map((o) => (
+                <div key={o.id}>
+                  <img
+                    src={o.imagem || "/ocorrencia.jpg"}
+                    className="w-20 h-20 rounded object-cover mb-2"
+                  />
+                  <p className="text-sm text-gray-300">
+                    {o.descricao}
+                  </p>
+
+                  {/* BOTÃO HISTÓRICO */}
+                  <a
+                    href="/ocorrencias"
+                    className="text-blue-400 text-xs underline"
+                  >
+                    Ver histórico →
+                  </a>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400">
+                Nenhuma ocorrência cadastrada.
+              </p>
+            )}
           </Card>
 
         </div>
 
         {/* ESTATÍSTICAS */}
-        <div className="grid md:grid-cols-4 gap-4 text-center">
-
-          <div className="bg-gray-900 p-4 rounded-xl">
-            <p className="text-2xl font-bold">950+</p>
-            <p className="text-sm text-gray-400">Policiais</p>
-          </div>
-
-          <div className="bg-gray-900 p-4 rounded-xl">
-            <p className="text-2xl font-bold">12</p>
-            <p className="text-sm text-gray-400">Companhias</p>
-          </div>
-
-          <div className="bg-gray-900 p-4 rounded-xl">
-            <p className="text-2xl font-bold">15</p>
-            <p className="text-sm text-gray-400">Municípios</p>
-          </div>
-
-          <div className="bg-gray-900 p-4 rounded-xl">
-            <p className="text-2xl font-bold">100%</p>
-            <p className="text-sm text-gray-400">Compromisso</p>
-          </div>
-
-        </div>
         <div className="grid md:grid-cols-4 gap-4 text-center">
 
           <div className="bg-gray-900 p-4 rounded-xl">
