@@ -1,43 +1,65 @@
-"use client";
-
 import Navbar from "../../components/Navbar";
+import { supabase } from "@/lib/supabase";
 
-const policiais = [
-  {
-    re: "151275-7",
-    nome: "SD PM João",
-    nascimento: "1995-04-10",
-    cia: "1ª CIA",
-  },
-  {
-    re: "987654-3",
-    nome: "CB PM Carlos",
-    nascimento: "1988-04-02",
-    cia: "FT",
-  },
-  {
-    re: "123456-1",
-    nome: "SGT PM Marcos",
-    nascimento: "1990-04-25",
-    cia: "EM",
-  },
-];
-
-export default function Aniversariantes() {
+export default async function Aniversariantes() {
   const hoje = new Date();
-  const mesAtual = hoje.getMonth();
+  const mesAtual = hoje.getMonth() + 1;
   const diaHoje = hoje.getDate();
 
-  const aniversariantes = policiais
-    .filter((p) => {
-      const mes = new Date(p.nascimento).getMonth();
+  const { data } = await supabase
+    .from("policiais")
+    .select("*")
+    .eq("ativo", true);
+
+  // 🔥 filtro seguro
+  const aniversariantes = data
+    ?.filter((p) => {
+      if (!p.data_nascimento) return false;
+
+      const dataStr = String(p.data_nascimento);
+      const mes = Number(dataStr.split("-")[1]);
+
       return mes === mesAtual;
     })
     .sort((a, b) => {
-      const diaA = new Date(a.nascimento).getDate();
-      const diaB = new Date(b.nascimento).getDate();
+      const diaA = Number(String(a.data_nascimento).split("-")[2]);
+      const diaB = Number(String(b.data_nascimento).split("-")[2]);
       return diaA - diaB;
     });
+
+  // 🎖️ medalha
+  function renderMedalha(grau?: number) {
+    if (!grau) return null;
+
+    const total = 5;
+    const preenchidas = total - grau + 1;
+
+    return (
+      <div className="flex justify-center gap-1 mt-1">
+        {Array.from({ length: total }).map((_, i) => (
+          <span key={i}>
+            {i < preenchidas ? "🏅" : "⚪"}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // ⏱️ tempo de serviço
+  function tempoServico(dataPosse: string) {
+    const anos =
+      new Date().getFullYear() -
+      new Date(dataPosse).getFullYear();
+    return `${anos} anos`;
+  }
+
+  // 🎂 idade
+  function idade(data: string) {
+    return (
+      new Date().getFullYear() -
+      new Date(data).getFullYear()
+    );
+  }
 
   return (
     <main className="bg-gray-950 text-white min-h-screen">
@@ -45,68 +67,77 @@ export default function Aniversariantes() {
 
       <div className="p-6 max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">
-          Aniversariantes do Mês 🎉
+          🎂 Aniversariantes do Mês
         </h1>
 
-        {aniversariantes.length === 0 ? (
+        {!aniversariantes || aniversariantes.length === 0 ? (
           <p className="text-gray-400">
-            Nenhum aniversariante neste mês.
+            Nenhum aniversariante este mês.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
 
-            {aniversariantes.map((p, index) => {
-              const data = new Date(p.nascimento);
-              const dia = data.getDate();
-              const idade =
-                hoje.getFullYear() - data.getFullYear();
+            {aniversariantes.map((p) => {
+              const dataStr = String(p.data_nascimento);
+              const dia = Number(dataStr.split("-")[2]);
 
               const isHoje = dia === diaHoje;
 
               return (
                 <div
-                  key={index}
-                  className={`bg-gray-900 p-5 rounded-xl flex flex-col items-center text-center shadow-lg transition hover:scale-105 ${
-                    isHoje ? "ring-2 ring-green-400" : ""
+                  key={p.id}
+                  className={`bg-gray-900 p-4 rounded-xl text-center transition-all duration-300 ${
+                    isHoje
+                      ? "border-2 border-yellow-400 scale-105 shadow-lg"
+                      : ""
                   }`}
                 >
                   {/* FOTO */}
                   <img
-                    src={`/oficiais/${p.re}.jpg`}
-                    className="w-20 h-20 rounded-full object-cover mb-3"
+                    src={
+                      p.tipo === "oficial"
+                        ? `/oficiais/${p.re}.png`
+                        : `/pm/${p.re}.png`
+                    }
+                    className="w-20 h-20 mx-auto rounded-full object-cover"
                   />
 
                   {/* NOME */}
-                  <p className="font-bold">{p.nome}</p>
-
-                  {/* RE */}
-                  <p className="text-sm text-gray-400">
-                    RE: {p.re}
+                  <p className="font-bold mt-2 text-sm">
+                    {p.posto} {p.nome_guerra}
                   </p>
 
                   {/* CIA */}
-                  <p className="text-xs text-blue-400 mb-2">
+                  <p className="text-xs text-gray-400">
                     {p.cia}
                   </p>
 
                   {/* DIA */}
-                  <div className="bg-gray-800 px-3 py-1 rounded mb-2">
-                    <span className="text-lg font-bold">
-                      {dia}
-                    </span>
-                  </div>
-
-                  {/* IDADE */}
-                  <p className="text-sm text-gray-400">
-                    {idade} anos
+                  <p className="text-sm text-blue-400 mt-1">
+                    🎂 Dia {dia}
                   </p>
 
-                  {/* HOJE */}
+                  {/* 🎉 DESTAQUE */}
                   {isHoje && (
-                    <span className="mt-2 text-green-400 text-xs font-bold">
-                      🎉 HOJE
-                    </span>
+                    <p className="text-yellow-400 text-xs mt-1 font-bold">
+                      🎉 Parabéns!
+                    </p>
                   )}
+
+                  {/* IDADE */}
+                  <p className="text-xs text-gray-400">
+                    {idade(p.data_nascimento)} anos de idade
+                  </p>
+
+                  {/* TEMPO SERVIÇO */}
+                  {p.data_posse && (
+                    <p className="text-xs text-gray-400">
+                      {tempoServico(p.data_posse)} de PM
+                    </p>
+                  )}
+
+                  {/* MEDALHA */}
+                  {renderMedalha(p.medalha_grau)}
                 </div>
               );
             })}

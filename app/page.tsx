@@ -52,7 +52,7 @@ export default async function Home() {
               pmMes.map((pm) => (
                 <div key={pm.id} className="flex gap-4 items-center">
                   <img
-                    src={`/oficiais/${pm.re}.jpg`}
+                    src={`/pm/${pm.re}.png`}
                     className="w-20 h-20 rounded object-cover"
                   />
                   <div>
