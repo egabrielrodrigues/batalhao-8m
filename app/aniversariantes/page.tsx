@@ -1,5 +1,20 @@
 import Navbar from "../../components/Navbar";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
+
+type Policial = {
+  id: string;
+  re: string;
+  nome_guerra: string;
+  posto: string;
+  cia: string;
+  tipo: string;
+  data_nascimento: string;
+  data_posse?: string;
+  medalha_grau?: number;
+  foto?: string;
+  ativo: boolean;
+};
 
 export default async function Aniversariantes() {
   const hoje = new Date();
@@ -11,19 +26,19 @@ export default async function Aniversariantes() {
     .select("*")
     .eq("ativo", true);
 
+  const policiais = (data as Policial[]) || [];
+
   // 🔥 filtro seguro
-  const aniversariantes = data
-    ?.filter((p) => {
+  const aniversariantes = policiais
+    .filter((p) => {
       if (!p.data_nascimento) return false;
 
-      const dataStr = String(p.data_nascimento);
-      const mes = Number(dataStr.split("-")[1]);
-
+      const mes = Number(p.data_nascimento.split("-")[1]);
       return mes === mesAtual;
     })
     .sort((a, b) => {
-      const diaA = Number(String(a.data_nascimento).split("-")[2]);
-      const diaB = Number(String(b.data_nascimento).split("-")[2]);
+      const diaA = Number(a.data_nascimento.split("-")[2]);
+      const diaB = Number(b.data_nascimento.split("-")[2]);
       return diaA - diaB;
     });
 
@@ -70,17 +85,14 @@ export default async function Aniversariantes() {
           🎂 Aniversariantes do Mês
         </h1>
 
-        {!aniversariantes || aniversariantes.length === 0 ? (
+        {aniversariantes.length === 0 ? (
           <p className="text-gray-400">
             Nenhum aniversariante este mês.
           </p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-
             {aniversariantes.map((p) => {
-              const dataStr = String(p.data_nascimento);
-              const dia = Number(dataStr.split("-")[2]);
-
+              const dia = Number(p.data_nascimento.split("-")[2]);
               const isHoje = dia === diaHoje;
 
               return (
@@ -93,13 +105,16 @@ export default async function Aniversariantes() {
                   }`}
                 >
                   {/* FOTO */}
-                  <img
+                  <Image
                     src={
-                      p.tipo === "oficial"
-                        ? `/oficiais/${p.re}.png`
-                        : `/pm/${p.re}.png`
+                      p.foto && p.foto.startsWith("http")
+                        ? p.foto
+                        : "/placeholder.png"
                     }
-                    className="w-20 h-20 mx-auto rounded-full object-cover"
+                    alt="Foto do policial"
+                    width={80}
+                    height={80}
+                    className="rounded-full object-cover mx-auto"
                   />
 
                   {/* NOME */}
@@ -126,7 +141,7 @@ export default async function Aniversariantes() {
 
                   {/* IDADE */}
                   <p className="text-xs text-gray-400">
-                    {idade(p.data_nascimento)} anos de idade
+                    {idade(p.data_nascimento)} anos
                   </p>
 
                   {/* TEMPO SERVIÇO */}
@@ -141,7 +156,6 @@ export default async function Aniversariantes() {
                 </div>
               );
             })}
-
           </div>
         )}
       </div>

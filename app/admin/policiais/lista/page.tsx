@@ -9,14 +9,15 @@ type Policial = {
   nome_guerra: string;
   posto: string;
   cia: string;
-  tipo: string;
+  tipo: "praca" | "oficial";
   ativo: boolean;
+  foto?: string; // 🔥 CORREÇÃO AQUI
 };
 
 export default function ListaPoliciais() {
   const [dados, setDados] = useState<Policial[]>([]);
 
-  async function carregar() {
+  async function carregar(): Promise<void> { // 🔥 CORREÇÃO AQUI
     const { data } = await supabase
       .from("policiais")
       .select("*")
@@ -26,13 +27,16 @@ export default function ListaPoliciais() {
   }
 
   useEffect(() => {
-    carregar();
-  }, []);
+  async function load() {
+    await carregar();
+  }
 
-  // 🔥 INATIVAR (substitui delete)
-  async function inativar(id: string) {
+  load();
+}, []);
+
+  // 🔥 INATIVAR
+  async function inativar(id: string): Promise<void> {
     const confirmar = confirm("Deseja inativar este policial?");
-
     if (!confirmar) return;
 
     const { error } = await supabase
@@ -44,11 +48,12 @@ export default function ListaPoliciais() {
       alert("Erro ao inativar");
     } else {
       alert("Policial inativado!");
-      carregar(); // recarrega lista
+      carregar();
     }
   }
 
-  const ciaMap: any = {
+  // 🔥 SEM ANY
+  const ciaMap: Record<string, string> = {
     "1CIA": "1ª CIA",
     "2CIA": "2ª CIA",
     "3CIA": "3ª CIA",
@@ -77,9 +82,11 @@ export default function ListaPoliciais() {
 
               <img
                 src={
-                  p.tipo === "oficial"
+                  p.foto ||
+                  (p.tipo === "oficial"
                     ? `/oficiais/${p.re}.png`
-                    : `/pm/${p.re}.png`
+                    : `/pm/${p.re}.png`) ||
+                  "/placeholder.png"
                 }
                 className="w-12 h-12 rounded-full object-cover"
               />
@@ -106,7 +113,9 @@ export default function ListaPoliciais() {
 
               <button
                 className="bg-yellow-600 px-3 py-1 rounded text-sm"
-                onClick={() => window.location.href = `/admin/policiais/${p.id}`}
+                onClick={() =>
+                  (window.location.href = `/admin/policiais/${p.id}`)
+                }
               >
                 Editar
               </button>

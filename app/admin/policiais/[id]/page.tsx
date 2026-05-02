@@ -4,11 +4,26 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 
+type Policial = {
+  id: string;
+  re: string;
+  nome_guerra: string;
+  nome_completo: string;
+  posto: string;
+  cia: string;
+  tipo: string;
+  data_nascimento?: string;
+  data_posse?: string;
+  medalha_grau: number;
+  foto?: string;
+  ativo: boolean;
+};
+
 export default function EditarPolicial() {
   const { id } = useParams();
   const router = useRouter();
 
-  const [form, setForm] = useState<any>(null);
+  const [form, setForm] = useState<Policial | null>(null);
 
   // 🔥 carregar dados
   useEffect(() => {
@@ -22,11 +37,39 @@ export default function EditarPolicial() {
       setForm(data);
     }
 
-    carregar();
+    if (id) carregar();
   }, [id]);
 
-  async function salvar(e: any) {
+  // 🔥 upload da foto
+  async function uploadFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !form) return;
+
+    const fileName = `${form.re}.png`;
+
+    const { error } = await supabase.storage
+      .from("pm")
+      .upload(fileName, file, {
+        upsert: true,
+      });
+
+    if (error) {
+      alert(error.message);
+    } else {
+      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pm/${fileName}`;
+
+      setForm((prev) =>
+        prev ? { ...prev, foto: url } : prev
+      );
+
+      alert("Foto atualizada!");
+    }
+  }
+
+  // 🔥 salvar
+  async function salvar(e: React.FormEvent) {
     e.preventDefault();
+    if (!form) return;
 
     const { error } = await supabase
       .from("policiais")
@@ -40,9 +83,13 @@ export default function EditarPolicial() {
       alert("Atualizado com sucesso!");
       router.push("/admin/policiais/lista");
     }
+
+    console.log(form);
+
   }
 
-  if (!form) return <p className="text-white p-6">Carregando...</p>;
+  if (!form)
+    return <p className="text-white p-6">Carregando...</p>;
 
   return (
     <main className="bg-gray-950 text-white min-h-screen p-6">
@@ -52,12 +99,14 @@ export default function EditarPolicial() {
 
       <form onSubmit={salvar} className="space-y-4 max-w-md">
 
+        {/* RE */}
         <input
           value={form.re}
           disabled
           className="w-full p-2 rounded bg-gray-800"
         />
 
+        {/* NOME */}
         <input
           value={form.nome_guerra}
           onChange={(e) =>
@@ -162,6 +211,28 @@ export default function EditarPolicial() {
           <option value={2}>2º Grau</option>
           <option value={1}>1º Grau</option>
         </select>
+
+        {/* FOTO ATUAL */}
+        {form.foto && (
+          <img
+            src={form.foto}
+            className="w-20 h-20 rounded-full"
+          />
+        )}
+
+        {/* UPLOAD */}
+        <div>
+          <label className="text-sm text-gray-400">
+            Atualizar Foto
+          </label>
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={uploadFoto}
+            className="w-full p-2 bg-gray-900 rounded mt-1"
+          />
+        </div>
 
         <button className="bg-green-600 w-full p-2 rounded">
           Salvar Alterações
